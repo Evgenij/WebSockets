@@ -11,11 +11,12 @@ const PORT = 8000;
 
 const connections = {};
 const users = {};
-const broadcast = () => {
+const broadcastUsers = () => {
 	Object.keys(connections).map((uuid) => {
 		const connection = connections[uuid];
+		const message = JSON.stringify(users);
 		const user = users[uuid];
-		connection.send(JSON.stringify(user));
+		connection.send(message);
 	});
 };
 
@@ -23,10 +24,22 @@ const handleMessage = (bytes, uuid) => {
 	const message = JSON.parse(bytes.toString());
 	const user = users[uuid];
 	user.state = message;
-	console.log(message);
+
+	broadcastUsers();
+	log(
+		`User ${user.username} update their state: ${JSON.stringify(
+			user.state
+		)}`
+	);
 };
 
-const handleClose = (uuid) => {};
+const handleClose = (uuid) => {
+	log(`User ${users[uuid].username} disconnected}`);
+
+	delete connections[uuid];
+	delete users[uuid];
+	broadcastUsers();
+};
 
 wsServer.on("connection", (connection, request) => {
 	//log("New connection established");
